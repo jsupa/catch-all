@@ -3,9 +3,10 @@
 A lightweight **Express 5** application built with **pnpm**, **MongoDB**, and **Mongoose**.
 
 - 🌐 **Subdomain Catch-All**: Catches any subdomain (e.g. `kadkmakdma.domain.com`, `*.domain.com`) and any path, showing the exact same form on every page.
-- 🚫 **No Autofill / Suggestions**: Specifically disables browser email autocomplete popups and saved email suggestions using `autocomplete="off"`, `type="text"`, dummy heuristics buffers, and `readonly` focus unlocking.
+- 🚫 **Autofill Suppression**: Disables browser suggestions using `autocomplete="off"`, `type="text"`, and privacy attributes.
 - 📝 **Simple Two-Input Form**: Only **Name** and **Email** fields with a submit button.
-- 💾 **MongoDB + Mongoose without validation**: Accepts any input strings directly and saves them to MongoDB without regex or required validation.
+- 🔒 **Empty Submission Prevention**: Disallows submitting empty forms on both client and server (returns HTTP 400 with a descriptive message). Accepts arbitrary string formatting.
+- 📱 **Mobile Friendly**: Clean keyboard interaction on phones without auto-zoom or focus traps.
 
 ---
 
@@ -57,20 +58,21 @@ Modern browsers (Chrome, Firefox, Safari) and macOS automatically resolve `*.loc
 
 ---
 
-## 🛡️ Autofill & Suggestion Suppression
-
-Modern browsers aggressively trigger email autofill menus when they detect `type="email"` or inputs named `email`. To prevent this:
-1. `<form autocomplete="off" novalidate>`
+## 🛡️ Autofill & Keyboard Behavior
+ 
+Modern browsers aggressively trigger email autofill menus when they detect `type="email"` or inputs named `email`. To prevent this while remaining mobile-friendly:
+1. `<form autocomplete="off">`
 2. `<input type="text" ... autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" data-lpignore="true">`
-3. Uses `type="text"` instead of `type="email"` to avoid browser account suggestion hooks while allowing any email format to be submitted.
-4. Uses an invisible dummy field to trap browser heuristic scans.
-5. Uses `readonly` unlocked on focus to block Chromium from popping up the saved emails dropdown on initial load or tap.
+3. Uses `type="text"` instead of `type="email"` to avoid browser account suggestion hooks while allowing any text to be submitted.
+4. Uses standard input sizing (`1rem` / 16px) to prevent iOS Safari from automatically zooming into the form upon focus.
+5. Employs `enterkeyhint` (`"next"` on name, `"send"` on email) for better mobile virtual keyboard navigation.
 
 ---
 
-## 🗄️ Database Model (Without Validation)
+## 🗄️ Validation & Database Persistence
 
-Saved using Mongoose with `validateBeforeSave: false` and `strict: false`:
+1. **Empty Form Protection**: Submitting an empty or whitespace-only form is rejected with HTTP 400 both on the client side (via HTML5 validation and custom trim checks) and server side (returning a clean error alert or JSON error).
+2. **Flexible Input Handling**: No strict regex or email format validation is imposed; any non-empty name and email are saved directly into MongoDB:
 ```javascript
 {
   name: String,
@@ -81,7 +83,6 @@ Saved using Mongoose with `validateBeforeSave: false` and `strict: false`:
   createdAt: Date
 }
 ```
-No validation is enforced: any text, empty strings, or unformatted emails are persisted directly.
 
 ---
 

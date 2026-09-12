@@ -34,21 +34,48 @@ app.get('/favicon.ico', (req, res) => res.status(204).end());
 async function handleSubmission(req, res) {
   try {
     const { name, email } = req.body;
+    const trimmedName = typeof name === 'string' ? name.trim() : '';
+    const trimmedEmail = typeof email === 'string' ? email.trim() : '';
+
+    const isJsonRequest =
+      req.xhr ||
+      (req.headers.accept && req.headers.accept.includes('application/json'));
+
+    // Reject empty form submissions
+    if (!trimmedName || !trimmedEmail) {
+      const meta = getRequestMeta(req);
+      const errorMessage =
+        !trimmedName && !trimmedEmail
+          ? 'Form cannot be empty. Please fill in both Name and Email.'
+          : !trimmedName
+          ? 'Name cannot be empty. Please enter your name.'
+          : 'Email cannot be empty. Please enter your email.';
+
+      if (isJsonRequest) {
+        return res.status(400).json({
+          success: false,
+          error: errorMessage,
+        });
+      }
+
+      const html = renderFormHtml({
+        host: meta.host,
+        path: meta.path,
+        error: errorMessage,
+      });
+      return res.status(400).send(html);
+    }
+
     const meta = getRequestMeta(req);
 
-    // Save directly to DB without any validation
+    // Save directly to DB without any format restriction
     const submission = await Submission.create({
-      name: name ?? '',
-      email: email ?? '',
+      name: trimmedName,
+      email: trimmedEmail,
       host: meta.host,
       subdomain: meta.subdomain,
       path: meta.path,
     });
-
-    // Check if client asked for JSON (API/fetch)
-    const isJsonRequest =
-      req.xhr ||
-      (req.headers.accept && req.headers.accept.includes('application/json'));
 
     if (isJsonRequest) {
       return res.status(201).json({

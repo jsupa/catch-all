@@ -128,7 +128,7 @@ export function renderFormHtml({ host = '', path = '', submission = null, error 
     input[type="text"] {
       width: 100%;
       padding: 0.75rem 0.875rem;
-      font-size: 0.95rem;
+      font-size: 1rem;
       background: #0f172a;
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -200,17 +200,12 @@ export function renderFormHtml({ host = '', path = '', submission = null, error 
     <!-- 
       Autofill prevention attributes:
       1. autocomplete="off" on form
-      2. Hidden dummy input to catch browser autofill heuristics
-      3. type="text" instead of type="email" to prevent browser email suggestions
-      4. autocomplete="off", autocorrect="off", autocapitalize="none", spellcheck="false"
-      5. readonly onfocus="this.removeAttribute('readonly')" to block Chromium initial autofill popup
-      6. data-lpignore="true" data-1p-ignore="true" to disable password manager popups
-      7. novalidate ensures zero client validation
+      2. type="text" instead of type="email" to prevent browser email suggestions
+      3. autocomplete="off", autocorrect="off", autocapitalize="none", spellcheck="false"
+      4. data-lpignore="true" data-1p-ignore="true" to disable password manager popups
+      5. required on both fields to disallow submitting empty forms
     -->
-    <form method="POST" action="/submit" autocomplete="off" novalidate>
-      <!-- Dummy input to absorb browser autofill scan -->
-      <input type="text" style="position: absolute; opacity: 0; pointer-events: none; height: 0; width: 0;" tabindex="-1" autocomplete="false" aria-hidden="true" />
-
+    <form method="POST" action="/submit" autocomplete="off">
       <div class="form-group">
         <label for="name">Name</label>
         <input
@@ -224,8 +219,8 @@ export function renderFormHtml({ host = '', path = '', submission = null, error 
           spellcheck="false"
           data-lpignore="true"
           data-1p-ignore="true"
-          readonly
-          onfocus="this.removeAttribute('readonly');"
+          enterkeyhint="next"
+          required
         />
       </div>
 
@@ -242,14 +237,46 @@ export function renderFormHtml({ host = '', path = '', submission = null, error 
           spellcheck="false"
           data-lpignore="true"
           data-1p-ignore="true"
-          readonly
-          onfocus="this.removeAttribute('readonly');"
+          enterkeyhint="send"
+          required
         />
       </div>
 
       <button type="submit">Submit</button>
     </form>
   </div>
+
+  <script>
+    const form = document.querySelector('form');
+    if (form) {
+      form.addEventListener('submit', function (e) {
+        const nameInput = document.getElementById('name');
+        const emailInput = document.getElementById('email');
+        const nameVal = nameInput ? nameInput.value.trim() : '';
+        const emailVal = emailInput ? emailInput.value.trim() : '';
+
+        if (!nameVal || !emailVal) {
+          e.preventDefault();
+          if (!nameVal && nameInput) {
+            nameInput.setCustomValidity('Please enter your name.');
+            nameInput.reportValidity();
+            nameInput.focus();
+          } else if (!emailVal && emailInput) {
+            emailInput.setCustomValidity('Please enter your email.');
+            emailInput.reportValidity();
+            emailInput.focus();
+          }
+        }
+      });
+
+      const inputs = form.querySelectorAll('input[type="text"]');
+      inputs.forEach(function (input) {
+        input.addEventListener('input', function () {
+          input.setCustomValidity('');
+        });
+      });
+    }
+  </script>
 </body>
 </html>`;
 }

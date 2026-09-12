@@ -115,3 +115,67 @@ test('JSON API request returns JSON response', async () => {
   assert.equal(res.body.data.name, 'JSON User');
   assert.equal(res.body.data.email, 'json@test.com');
 });
+
+test('POST /submit rejects empty form submission with 400 Bad Request', async () => {
+  const res = await request(app)
+    .post('/submit')
+    .type('form')
+    .send({ name: '', email: '' });
+
+  assert.equal(res.status, 400);
+  assert.match(res.text, /Form cannot be empty/);
+
+  // Verify nothing was saved in MongoDB
+  const count = await Submission.countDocuments();
+  assert.equal(count, 0);
+});
+
+test('POST /submit rejects whitespace-only submission with 400 Bad Request', async () => {
+  const res = await request(app)
+    .post('/submit')
+    .type('form')
+    .send({ name: '   ', email: '   ' });
+
+  assert.equal(res.status, 400);
+  assert.match(res.text, /Form cannot be empty/);
+
+  const count = await Submission.countDocuments();
+  assert.equal(count, 0);
+});
+
+test('POST /submit rejects missing name or email with 400 Bad Request', async () => {
+  const resNoName = await request(app)
+    .post('/submit')
+    .type('form')
+    .send({ name: '', email: 'alice@example.com' });
+
+  assert.equal(resNoName.status, 400);
+  assert.match(resNoName.text, /Name cannot be empty/);
+
+  const resNoEmail = await request(app)
+    .post('/submit')
+    .type('form')
+    .send({ name: 'Alice', email: '' });
+
+  assert.equal(resNoEmail.status, 400);
+  assert.match(resNoEmail.text, /Email cannot be empty/);
+});
+
+test('POST /submit rejects empty JSON payload with 400 JSON response', async () => {
+  const res = await request(app)
+    .post('/submit')
+    .set('Accept', 'application/json')
+    .send({});
+
+  assert.equal(res.status, 400);
+  assert.equal(res.body.success, false);
+  assert.match(res.body.error, /Form cannot be empty/);
+});
+
+test('GET / form inputs have required attribute and no readonly attribute', async () => {
+  const res = await request(app).get('/');
+  assert.equal(res.status, 200);
+  assert.match(res.text, /required/);
+  assert.doesNotMatch(res.text, /readonly/);
+});
+
